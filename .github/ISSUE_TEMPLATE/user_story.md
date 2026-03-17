@@ -24,6 +24,13 @@ assignees: ''
 
 ---
 
+## 📝 Sub-tasks
+- [ ] Frontend: Complete React UI and interaction logic (@assignee)
+- [ ] Backend: Write Express API endpoints (@assignee)
+- [ ] Integration: API integration and testing
+
+---
+
 ## 💻 Technical Notes (Optional)
 *(If you have specific requirements for the implementation, provide hints for the team here, e.g., which database collections to involve or existing React components to reuse)*
 * **Frontend (React)**: 
