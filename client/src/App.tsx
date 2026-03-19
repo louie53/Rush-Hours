@@ -5,7 +5,7 @@ import BuildingDetail from './pages/BuildingDetail';
 function App() {
   return (
     <Router>
-      <div style={{ margin: 0, padding: 0, width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      <div className="m-0 p-0 w-screen h-screen overflow-hidden">
         <Routes>
           {/* Home Route: The Map */}
           <Route path="/" element={<CampusMap />} />

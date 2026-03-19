@@ -1,15 +1,68 @@
 @import "tailwindcss";
 
-/* Reset default margins */
+@theme {
+  /* Brand Colors */
+  --color-brand: var(--color-indigo-600);
+  --color-brand-hover: var(--color-indigo-700);
+  --color-brand-light: var(--color-indigo-50);
+  
+  /* UI Surface Colors */
+  --color-surface: #ffffff;
+  --color-surface-hover: #f9f9f9;
+  --color-border-subtle: #f1f1f1;
+
+  /* Custom Spacing / Radii */
+  --radius-premium: 2rem;
+  --radius-button: 1rem;
+
+  /* Typography */
+  --font-display: "Inter", sans-serif;
+}
+
+@layer components {
+  /* Premium Heading Style */
+  .heading-premium {
+    @apply font-black italic tracking-tighter uppercase;
+  }
+
+  /* Main Action Button */
+  .btn-primary {
+    @apply flex items-center gap-3 bg-brand text-white px-10 py-5 rounded-[2rem] font-black text-xl italic shadow-2xl hover:bg-brand-hover hover:-translate-y-1 active:scale-95 transition-all outline-none;
+  }
+
+  /* Card Container */
+  .card-premium {
+    @apply bg-surface p-8 rounded-premium shadow-sm border-2 border-border-subtle hover:border-brand-light hover:shadow-2xl transition-all duration-300;
+  }
+}
+
+/* Global Reset and Base Styles */
 body, html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Prevent scrolling since map takes full screen */
+  overflow: hidden; /* Map takes full screen */
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #eee;
+  border-radius: 10px;
 }

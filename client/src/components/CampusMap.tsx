@@ -3,24 +3,22 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useState } from 'react';
 import Map, { GeolocateControl, Marker, NavigationControl } from 'react-map-gl/mapbox';
 import { useNavigate } from 'react-router-dom';
-
-const API_URL = 'http://localhost:5000/api';
+import { useCreateSession } from '../hooks/useCreateSession';
 
 // Using the same coordinates we used in the backend seeder
 const CAMPUS_BOUNDS: [[number, number], [number, number]] = [
   [174.7600, -36.8580], // Southwest
-  [174.7750, -36.8460], // Northeast (slightly wider to allow smooth panning at high zoom)
+  [174.7750, -36.8460], // Northeast
 ];
 
 const INITIAL_VIEW_STATE = {
   longitude: 174.7685,
   latitude: -36.8520,
-  zoom: 17, // Start closer
+  zoom: 17,
   pitch: 45,
   bearing: -17.6,
 };
 
-// Accurate coordinates for University of Auckland (UoA)
 const BUILDINGS = [
   {
     id: 'science-bldg',
@@ -44,6 +42,7 @@ export default function CampusMap() {
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const navigate = useNavigate();
+  const { createSession } = useCreateSession();
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -55,7 +54,6 @@ export default function CampusMap() {
     buildingId: 'library' // Default selected building
   });
 
-  // Note: We'll use import.meta.env for Vite environment variables
   const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
   if (!MAPBOX_TOKEN) {
@@ -69,59 +67,36 @@ export default function CampusMap() {
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      await createSession({
+        ...formData,
+        buildingIdentifier: formData.buildingId
       });
-      if (res.ok) {
-        setShowModal(false);
-        // Navigate straight into the building lobby they just created the session for!
-        navigate(`/building/${formData.buildingId}`);
-      } else {
-        alert('Failed to create session');
-      }
+      setShowModal(false);
+      navigate(`/building/${formData.buildingId}`);
     } catch (err) {
-      console.error(err);
-      alert('Network error');
+      alert('Failed to create session');
     }
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* Header UI Overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-          backgroundColor: 'white',
-          padding: '1rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontFamily: 'sans-serif'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <MapPin color="#f97316" />
-          <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Rush Hours - Campus Map</h1>
+    <div className="w-screen h-screen relative">
+      <div className="absolute top-0 left-0 right-0 z-10 bg-white p-4 shadow-md flex justify-between items-center font-sans border-b border-border-subtle">
+        <div className="flex items-center gap-2">
+          <MapPin className="text-orange-500" />
+          <h1 className="m-0 text-xl font-bold italic tracking-tight text-gray-800">Rush Hours - Campus Map</h1>
         </div>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <span style={{ fontSize: '0.875rem', color: '#666' }}>📍 Select a building to view study rooms</span>
+        <div className="flex gap-4">
+          <span className="text-sm text-gray-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">📍 Select a building to view study rooms</span>
         </div>
       </div>
 
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={INITIAL_VIEW_STATE}
-        mapStyle="mapbox://styles/louie170/cmmuafbot00be01sk1gvz0cml" // <--- Your custom cartoon style!
-        maxBounds={CAMPUS_BOUNDS} // Re-enabled constraints
+        mapStyle="mapbox://styles/louie170/cmmuafbot00be01sk1gvz0cml"
+        maxBounds={CAMPUS_BOUNDS}
         style={{ width: '100%', height: '100%' }}
-        minZoom={16.5} // Re-enabled constraints
+        minZoom={16.5}
         maxZoom={19}
       >
         <NavigationControl position="bottom-right" />
@@ -130,7 +105,6 @@ export default function CampusMap() {
           trackUserLocation={true}
           showUserHeading={true}
           onGeolocate={(e) => {
-            // Track the user's location to show our custom label
             setUserLocation({
               lat: e.coords.latitude,
               lng: e.coords.longitude,
@@ -138,32 +112,19 @@ export default function CampusMap() {
           }}
         />
 
-        {/* 📍 'You are here' Label */}
         {userLocation && (
           <Marker 
             longitude={userLocation.lng} 
             latitude={userLocation.lat} 
             anchor="bottom"
-            offset={[0, -25]} // Push it above the blue dot
+            offset={[0, -25]}
           >
-            <div style={{
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
-              whiteSpace: 'nowrap',
-              fontFamily: 'sans-serif',
-              border: '2px solid white'
-            }}>
+            <div className="bg-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg border-2 border-white animate-bounce">
               👋 You are here
             </div>
           </Marker>
         )}
         
-        {/* Render Buildings as Custom HTML Markers */}
         {BUILDINGS.map((bldg) => (
           <Marker
             key={bldg.id}
@@ -175,51 +136,21 @@ export default function CampusMap() {
               setSelectedBuilding(bldg.id);
             }}
           >
-            {/* The cartoon-style marker UI overlay */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease',
-                transform: selectedBuilding === bldg.id ? 'scale(1.1)' : 'scale(1)',
-                fontFamily: 'sans-serif'
-              }}
-            >
-              {/* Information Bubble */}
+            <div className={`flex flex-col items-center cursor-pointer transition-transform duration-200 font-sans ${
+              selectedBuilding === bldg.id ? 'scale-110' : 'scale-100'
+            }`}>
               <div
-                style={{
-                  backgroundColor: 'white',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  marginBottom: '8px',
-                  border: `2px solid ${bldg.color}`,
-                  textAlign: 'center',
-                  minWidth: '120px'
-                }}
+                className="bg-white p-2 rounded-xl shadow-xl mb-2 text-center min-w-[140px] border-b-4"
+                style={{ borderColor: bldg.color }}
               >
-                <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
-                  {bldg.name}
-                </div>
-                <div style={{ fontSize: '11px', color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                  <BookOpen size={12} /> {bldg.classrooms} Classrooms
+                <div className="font-bold text-sm mb-1 text-gray-900">{bldg.name}</div>
+                <div className="text-[10px] text-gray-500 flex items-center justify-center gap-1 font-semibold uppercase tracking-wider">
+                  <BookOpen size={10} /> {bldg.classrooms} Classrooms
                 </div>
                 {selectedBuilding === bldg.id && (
                   <button
-                    style={{
-                      marginTop: '8px',
-                      backgroundColor: bldg.color,
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '4px 8px',
-                      fontWeight: 'bold',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      width: '100%'
-                    }}
+                    className="mt-2 w-full text-white rounded-lg py-1.5 font-bold text-[10px] cursor-pointer"
+                    style={{ backgroundColor: bldg.color }}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/building/${bldg.id}`);
@@ -231,69 +162,49 @@ export default function CampusMap() {
               </div>
 
               <div
-                style={{
-                  width: '60px',
-                  height: '60px',
+                className="w-[50px] h-[50px] rounded-2xl border-[3px] border-white shadow-2xl flex items-center justify-center text-white"
+                style={{ 
                   backgroundColor: bldg.color,
-                  borderRadius: '12px',
-                  border: '3px solid white',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  transform: selectedBuilding === bldg.id ? 'scale(1.15) translateY(-5px)' : 'scale(1) translateY(0)',
-                  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  transform: selectedBuilding === bldg.id ? 'translateY(-8px)' : 'none'
                 }}
               >
-                {bldg.id === 'library' ? <BookOpen size={28} /> : <MapPin size={28} />}
+                {bldg.id === 'library' ? <BookOpen size={24} /> : <MapPin size={24} />}
               </div>
             </div>
           </Marker>
         ))}
       </Map>
 
-      {/* Global Floating Action Button for Creating Sessions */}
-      <div 
-        style={{
-          position: 'absolute',
-          bottom: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 20
-        }}
-      >
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-full font-bold shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all outline-none"
+          className="btn-primary"
         >
-          <PlusCircle size={24} />
-          <span className="text-lg">Start a Session</span>
+          <PlusCircle size={28} />
+          <span>Start a Session</span>
         </button>
       </div>
 
-      {/* Create Session Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 font-sans backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-surface rounded-premium w-full max-w-md p-8 shadow-2xl relative animate-in zoom-in duration-300">
             <button 
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
             >
               <X size={24} />
             </button>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <PlusCircle className="text-indigo-600" /> Start a Session
+            <h2 className="text-3xl font-black text-gray-900 mb-8 flex items-center gap-3">
+              <PlusCircle className="text-brand w-8 h-8" /> 
+              <span className="italic">Go Live!</span>
             </h2>
             
-            <form onSubmit={handleCreateSession} className="flex flex-col gap-5">
-              
-              {/* Building Selection Dropdown */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Select Building</label>
+            <form onSubmit={handleCreateSession} className="flex flex-col gap-6">
+              <div className="group">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Location</label>
                 <select
                   required
-                  className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 bg-white"
+                  className="w-full border-2 border-border-subtle bg-gray-50 rounded-2xl p-4 outline-none focus:border-brand transition-all font-bold text-gray-800"
                   value={formData.buildingId}
                   onChange={(e) => setFormData({...formData, buildingId: e.target.value})}
                 >
@@ -303,11 +214,11 @@ export default function CampusMap() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Session Title</label>
+              <div className="group">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Session Title</label>
                 <input 
                   type="text" required
-                  className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  className="w-full border-2 border-border-subtle bg-gray-50 rounded-2xl p-4 outline-none focus:border-brand transition-all font-bold text-gray-900"
                   placeholder="e.g. COMP101 Exam Prep"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
@@ -315,21 +226,21 @@ export default function CampusMap() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Your Name</label>
+                <div className="flex-[2]">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Your Alias</label>
                   <input 
                     type="text" required
-                    className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    className="w-full border-2 border-border-subtle bg-gray-50 rounded-2xl p-4 outline-none focus:border-brand transition-all font-bold text-gray-900"
                     placeholder="e.g. Alice"
                     value={formData.creatorName}
                     onChange={(e) => setFormData({...formData, creatorName: e.target.value})}
                   />
                 </div>
-                <div className="w-1/3">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Max Capacity</label>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Limit</label>
                   <input 
                     type="number" required min="2" max="20"
-                    className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    className="w-full border-2 border-border-subtle bg-gray-50 rounded-2xl p-4 outline-none focus:border-brand transition-all font-bold text-gray-900"
                     value={formData.capacity}
                     onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value) || 4})}
                   />
@@ -337,11 +248,11 @@ export default function CampusMap() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Description (Optional)</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 ml-1">Description</label>
                 <textarea 
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 resize-none"
-                  placeholder="What are you studying? Do you need quiet or discussion?"
+                  className="w-full border-2 border-border-subtle bg-gray-50 rounded-2xl p-4 outline-none focus:border-brand transition-all font-bold text-gray-900 resize-none"
+                  placeholder="What's the study vibe?"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
@@ -349,9 +260,9 @@ export default function CampusMap() {
 
               <button 
                 type="submit"
-                className="mt-2 w-full bg-indigo-600 text-white font-bold text-lg rounded-xl py-4 hover:bg-indigo-700 transition-colors shadow-md transform active:scale-95"
+                className="mt-2 w-full bg-brand text-white font-black text-xl italic rounded-2xl py-5 hover:bg-brand-hover transition-all"
               >
-                Create Room
+                CREATE LOBBY
               </button>
             </form>
           </div>
