@@ -31,7 +31,11 @@ const connectDB = async () => {
 // Start database connection
 connectDB();
 
+import sessionRoutes from './routes/sessionRoutes';
+
 // Routes
+app.use('/api/sessions', sessionRoutes);
+
 app.get('/api/test', (req: Request, res: Response) => {
     res.json({ message: 'Hello from MERN backend! MongoDB connection is configured.' });
 });

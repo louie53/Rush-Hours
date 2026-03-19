@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Campus from './models/Campus';
 import Building from './models/Building';
-import StudyRoom from './models/StudyRoom';
+import StudySession from './models/StudySession';
 
 dotenv.config();
 
@@ -21,7 +21,7 @@ const seedDatabase = async () => {
         await Promise.all([
             Campus.deleteMany({}),
             Building.deleteMany({}),
-            StudyRoom.deleteMany({}),
+            StudySession.deleteMany({}),
         ]);
 
         // 2. Create the Main Campus (assuming University of Auckland location)
@@ -31,7 +31,7 @@ const seedDatabase = async () => {
             description: 'The central university campus',
             location: {
                 type: 'Point',
-                coordinates: [174.7681, -36.8523], // Center of campus
+                coordinates: [174.7685, -36.8520], // Center of campus
             },
         });
 
@@ -44,7 +44,7 @@ const seedDatabase = async () => {
                 description: 'Faculty of Science',
                 location: {
                     type: 'Point',
-                    coordinates: [174.7670, -36.8510], // Slightly offset from center
+                    coordinates: [174.768460, -36.853192], 
                 },
                 totalClassrooms: 32,
             }),
@@ -54,45 +54,52 @@ const seedDatabase = async () => {
                 description: 'Main General Library',
                 location: {
                     type: 'Point',
-                    coordinates: [174.7690, -36.8530], // Slightly offset from center
+                    coordinates: [174.769328, -36.851185],
                 },
                 totalClassrooms: 15,
             }),
         ]);
 
-        // 4. Create Study Rooms for these buildings
-        console.log('Creating Study Rooms...');
+        // 4. Create Active Study Sessions (Lobbies) for these buildings
+        console.log('Creating Active Study Sessions...');
         await Promise.all([
-             // Science Building rooms
-            StudyRoom.create({
+             // Science Building sessions
+            StudySession.create({
                 buildingId: scienceBuilding._id,
-                name: 'Lab 101',
-                capacity: 40,
-                currentOccupancy: 12,
-                features: ['whiteboard', 'computers'],
+                title: 'COMPSCI 101 Assignment 2 Help',
+                description: 'Stuck on the loops part, anyone want to figure it out together?',
+                creatorName: 'AlexChen',
+                capacity: 4,
+                participants: ['AlexChen', 'SarahJ'],
+                status: 'active',
             }),
-            StudyRoom.create({
+            StudySession.create({
                 buildingId: scienceBuilding._id,
-                name: 'Lecture Theatre A',
-                capacity: 150,
-                currentOccupancy: 0,
-                features: ['projector'],
+                title: 'Data Science Study Group',
+                description: 'Reviewing for midterms. Quiet study mostly.',
+                creatorName: 'DataNerd',
+                capacity: 6,
+                participants: ['DataNerd'],
+                status: 'active',
             }),
-             // Library rooms
-            StudyRoom.create({
+             // Library sessions
+            StudySession.create({
                 buildingId: library._id,
-                name: 'Quiet Reading Room',
-                capacity: 100,
-                currentOccupancy: 45,
-                features: ['silent-zone', 'power-outlets'],
+                title: 'Law Reading marathon 📚',
+                description: 'No chatting, just pure focus. 2 hours pomodoro.',
+                creatorName: 'FutureLawyer',
+                capacity: 10,
+                participants: ['FutureLawyer', 'Mike', 'Emma'],
+                status: 'active',
             }),
-             StudyRoom.create({
+             StudySession.create({
                 buildingId: library._id,
-                name: 'Group Discussion Room 1',
-                capacity: 8,
-                currentOccupancy: 8,
-                isAvailable: false,
-                features: ['whiteboard', 'tv'],
+                title: 'Physics 101 Group Project',
+                description: 'Group 4 meeting here.',
+                creatorName: 'PhysicsGuy',
+                capacity: 5,
+                participants: ['PhysicsGuy', 'Alice', 'Bob', 'Charlie', 'Dave'],
+                status: 'active', // full capacity
             }),
         ]);
 
